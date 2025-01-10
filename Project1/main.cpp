@@ -121,6 +121,23 @@ void generateEnemies(std::vector<Enemy>& enemies, int count) {
         enemies.emplace_back(x, y);
     }
 }
+int loadMaxLevel(const std::string& filename) {
+    std::ifstream file(filename);
+    if (file.is_open()) {
+        int maxLevel;
+        file >> maxLevel;
+        return maxLevel;
+
+    }
+    return 1;
+}
+void saveMaxLevel(const std::string& filename, int maxLevel) {
+    std::ofstream file(filename);
+    if (file.is_open()) {
+        file << maxLevel;
+
+    }
+}
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(800, 600), "Space Invaders");
@@ -141,6 +158,11 @@ int main() {
     std::vector<Enemy> enemies;
     std::vector<Bullet> playerBullets;
     std::vector<Bullet> enemyBullets;
+    
+    const std::string saveFile="max_level.txt";
+    int maxLevel = loadMaxLevel(saveFile);
+
+
     int level = 1;
     generateEnemies(enemies, 2);
 
@@ -165,6 +187,13 @@ int main() {
     pauseText.setFillColor(sf::Color::White);
     pauseText.setString("Pauza\nNacisnij ESC zeby wznowic gre");
     pauseText.setPosition(200, 250);
+
+    sf::Text maxLevelText;
+    maxLevelText.setFont(font);
+    maxLevelText.setCharacterSize(24);
+    maxLevelText.setFillColor(sf::Color::White);
+    maxLevelText.setString("Max Level: " + std::to_string(maxLevel));
+    maxLevelText.setPosition(10, 30);
 
     bool isPaused=false;
     while (window.isOpen()) {
@@ -246,6 +275,11 @@ int main() {
                 levelText.setString("Level: " + std::to_string(level));
                 generateEnemies(enemies,1+level);
 
+                if (level > maxLevel) {
+                    maxLevel = level;
+                    maxLevelText.setString("Max Level: " + std::to_string(maxLevel));
+                    saveMaxLevel(saveFile, maxLevel);
+                }
             }
         }
         window.clear();
@@ -263,6 +297,7 @@ int main() {
             bullet.draw(window);
         }
         window.draw(levelText);
+        window.draw(maxLevelText);
         if (isPaused) {
             window.draw(pauseText);
         }
