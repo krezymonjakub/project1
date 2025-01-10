@@ -92,12 +92,27 @@ public:
         return sprite.getPosition().y < 0 || sprite.getPosition().y>600;
     }
 };
+void spawnEnemies(std::vector<Enemy>& enemies, int level) {
+    int enemyCount = 1 + level;
+    enemies.clear();
+    for (int i = 0;i < enemyCount;i++) {
+        float x = 50 + (i % 10) * 70;
+        float y = 50 + (i / 10) * 70;
+        enemies.emplace_back(x, y);
+    }
+}
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(800, 600), "Space Invaders");
     sf::Texture backgroundTexture;
     backgroundTexture.loadFromFile("background.png");
     sf::Sprite background(backgroundTexture);
+    sf::Vector2u textureSize = backgroundTexture.getSize();
+    sf::Vector2u windowSize = window.getSize();
+    background.setScale(
+        static_cast<float>(windowSize.x) / textureSize.x,
+        static_cast<float>(windowSize.y) / textureSize.y
+    );
 
     
     Player player;
@@ -106,9 +121,9 @@ int main() {
     std::vector<Enemy> enemies;
     std::vector<Bullet> playerBullets;
     std::vector<Bullet> enemyBullets;
-    for (int i = 0;i < 5; i++) {
-        enemies.emplace_back(100 + i * 100, 100);
-    }
+    int level = 0;
+    spawnEnemies(enemies, level);
+
 
    
     sf::Clock clock;
@@ -132,7 +147,7 @@ int main() {
         
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
             if (clock.getElapsedTime().asSeconds() > 0.5f) {
-                playerBullets.emplace_back(player.getPosition().x + 20, player.getPosition().y, -10.0f);
+                playerBullets.emplace_back(player.getPosition().x + 20, player.getPosition().y, -2.0f);
                 clock.restart();
             }
         }
@@ -141,7 +156,7 @@ int main() {
         if (enemyFireClock.getElapsedTime().asSeconds() > 2.0f) {
             for (auto& enemy : enemies) {
                 if (std::rand() % 2 == 0) {
-                    enemyBullets.emplace_back(enemy.getPosition().x + 20,enemy.getPosition().y + 50, 5.0f);
+                    enemyBullets.emplace_back(enemy.getPosition().x + 20,enemy.getPosition().y + 50, 1.0f);
                 }
             }
             enemyFireClock.restart();
@@ -185,7 +200,11 @@ int main() {
                 ++it;
             }
         }
+        if (enemies.empty()) {
+            level++;
+            spawnEnemies(enemies, level);
 
+        }
         
         window.clear();
         window.draw(background);
