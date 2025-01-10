@@ -10,15 +10,18 @@
 
 
 class Player {
-    sf::Texture texture;   
+    static std::shared_ptr<sf::Texture>texture;   
     sf::Sprite sprite;     
 
 public:
     Player() {
-        texture.loadFromFile("yamal.png");
-        sprite.setTexture(texture);
-        sprite.setPosition(375, 400); 
-        sprite.setScale(0.15, 0.15);
+        if (!texture) {
+            texture = std::make_shared<sf::Texture>();
+            texture->loadFromFile("sprite.png");
+        }
+        sprite.setTexture(*texture);
+        sprite.setPosition(375, 450); 
+        sprite.setScale(0.17, 0.17);
     }
 
     void move(float dx, float dy) {
@@ -36,18 +39,21 @@ public:
         return sprite.getGlobalBounds();
     }
 };
-
+std::shared_ptr<sf::Texture>Player::texture = nullptr;
 
 class Enemy {
-    sf::Texture texture;
+    static std::shared_ptr<sf::Texture>texture;
     sf::Sprite sprite;
 
 public:
     Enemy(float x, float y) {
-        texture.loadFromFile("vini.png");
-        sprite.setTexture(texture);
+        if (!texture) {
+            texture = std::make_shared<sf::Texture>();
+            texture->loadFromFile("enemy.png");
+        }
+        sprite.setTexture(*texture);
         sprite.setPosition(x, y);
-        sprite.setScale(0.25, 0.25);
+        sprite.setScale(0.5, 0.5);
     }
 
     void draw(sf::RenderWindow& window) {
@@ -62,19 +68,22 @@ public:
         return sprite.getGlobalBounds();
     }
 };
-
+std::shared_ptr<sf::Texture>Enemy::texture = nullptr;
 
 class Bullet {
-    sf::Texture texture;
+    static std::shared_ptr<sf::Texture>texture;
     sf::Sprite sprite;
     float speed;
 
 public:
     Bullet(float x, float y,float speedY) : speed(speedY) {
-        texture.loadFromFile("pilka.png");
-        sprite.setTexture(texture);
+        if (!texture) {
+            texture = std::make_shared<sf::Texture>();
+            texture->loadFromFile("bullet.png");
+        }
+        sprite.setTexture(*texture);
         sprite.setPosition(x, y);
-        sprite.setScale(0.03, 0.03);
+        sprite.setScale(0.3, 0.3);
     }
 
     void update() {
@@ -92,13 +101,32 @@ public:
         return sprite.getPosition().y < 0 || sprite.getPosition().y>600;
     }
 };
+std::shared_ptr<sf::Texture>Bullet::texture = nullptr;
+bool czyKolizja(const Enemy& newEnemy, const std::vector<Enemy>& enemies) {
+    for (const auto& enemy : enemies) {
+        if (newEnemy.getBounds().intersects(enemy.getBounds())) {
+            return true;
+        }
+    }
+    return false;
+}
 void spawnEnemies(std::vector<Enemy>& enemies, int level) {
     int enemyCount = 1 + level;
     enemies.clear();
+    std::srand(static_cast<unsigned>(std::time(nullptr)));
     for (int i = 0;i < enemyCount;i++) {
-        float x = 50 + (i % 10) * 70;
-        float y = 50 + (i / 10) * 70;
-        enemies.emplace_back(x, y);
+        for (int i = 0;i < enemyCount;i++) {
+            bool positionFound = false;
+            while (!positionFound) {
+                float x = static_cast<float>(std::rand() % 700 + 50);
+                float y = static_cast<float>(std::rand() % 150 + 0);
+                Enemy tempEnemy(x, y);
+                if (!czyKolizja(tempEnemy, enemies)) {
+                    enemies.emplace_back(x, y);
+                    positionFound = true;
+                }
+            }
+        }
     }
 }
 
