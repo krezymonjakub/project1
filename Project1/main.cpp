@@ -8,15 +8,6 @@
 #include <fstream>
 
 
-void initializeRandom() {
-    std::srand(static_cast<unsigned>(std::time(nullptr))); 
-}
-
-
-int getRandomX() {
-    return std::rand() % 750; 
-}
-
 
 class Player {
     sf::Texture texture;   
@@ -41,6 +32,9 @@ public:
     sf::Vector2f getPosition() const {
         return sprite.getPosition();
     }
+    sf::FloatRect getBounds() const {
+        return sprite.getGlobalBounds();
+    }
 };
 
 
@@ -60,6 +54,10 @@ public:
         window.draw(sprite);
     }
 
+    sf::Vector2f getPosition() const {
+        return sprite.getPosition();
+    }
+
     sf::FloatRect getBounds() const {
         return sprite.getGlobalBounds();
     }
@@ -72,7 +70,7 @@ class Bullet {
     float speed;
 
 public:
-    Bullet(float x, float y) : speed(-10.0f) {
+    Bullet(float x, float y,float speedY) : speed(speedY) {
         texture.loadFromFile("pilka.png");
         sprite.setTexture(texture);
         sprite.setPosition(x, y);
@@ -90,24 +88,31 @@ public:
     sf::FloatRect getBounds() const {
         return sprite.getGlobalBounds();
     }
+    bool isOffScreen() const {
+        return sprite.getPosition().y < 0 || sprite.getPosition().y>600;
+    }
 };
 
 int main() {
-    initializeRandom(); 
-
     sf::RenderWindow window(sf::VideoMode(800, 600), "Space Invaders");
-    window.setFramerateLimit(60);
+    sf::Texture backgroundTexture;
+    backgroundTexture.loadFromFile("background.png");
+    sf::Sprite background(backgroundTexture);
 
     
     Player player;
 
    
     std::vector<Enemy> enemies;
-    std::vector<Bullet> bullets;
+    std::vector<Bullet> playerBullets;
+    std::vector<Bullet> enemyBullets;
+    for (int i = 0;i < 5; i++) {
+        enemies.emplace_back(100 + i * 100, 100);
+    }
 
    
-    sf::Clock enemySpawnClock;
-    sf::Clock bulletClock;
+    sf::Clock clock;
+    sf::Clock enemyFireClock;
 
     while (window.isOpen()) {
         sf::Event event;
@@ -117,32 +122,64 @@ int main() {
         }
 
         
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
-            player.move(-5.0f, 0);
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)&&player.getPosition().x>0) {
+            player.move(-1.0f, 0);
         }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
-            player.move(5.0f, 0);
-        }
-
-        
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && bulletClock.getElapsedTime().asSeconds() > 0.5f) {
-            sf::Vector2f playerPosition = player.getPosition();
-            bullets.emplace_back(playerPosition.x + 25.0f, playerPosition.y); 
-            bulletClock.restart();
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)&&player.getPosition().x<750) {
+            player.move(1.0f, 0);
         }
 
         
-        if (enemySpawnClock.getElapsedTime().asSeconds() >= 5.0f) {
-            int randomX = getRandomX();
-            enemies.emplace_back(randomX, 100); 
-            enemySpawnClock.restart();
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
+            if (clock.getElapsedTime().asSeconds() > 0.5f) {
+                playerBullets.emplace_back(player.getPosition().x + 20, player.getPosition().y, -10.0f);
+                clock.restart();
+            }
         }
 
         
-        for (auto it = bullets.begin(); it != bullets.end(); ) {
+        if (enemyFireClock.getElapsedTime().asSeconds() > 2.0f) {
+            for (auto& enemy : enemies) {
+                if (std::rand() % 2 == 0) {
+                    enemyBullets.emplace_back(enemy.getPosition().x + 20,enemy.getPosition().y + 50, 5.0f);
+                }
+            }
+            enemyFireClock.restart();
+        }
+
+        for (auto it = playerBullets.begin();it != playerBullets.end();) {
             it->update();
-            if (it->getBounds().top + it->getBounds().height < 0) { 
-                it = bullets.erase(it);
+            if (it->isOffScreen()) {
+                it = playerBullets.erase(it);
+            }
+            else {
+                bool hit = false;
+                for (auto enemyIt = enemies.begin();enemyIt != enemies.end();) {
+                    if (it->getBounds().intersects(enemyIt->getBounds())) {
+                        enemyIt = enemies.erase(enemyIt);
+                        hit = true;
+                        break;
+
+                    }
+                    else {
+                        ++enemyIt;
+                    }
+                }
+                if (hit) {
+                    it = playerBullets.erase(it);
+                }
+                else {
+                    ++it;
+                }
+            }
+        }
+        for (auto it = enemyBullets.begin();it != enemyBullets.end();) {
+            it->update();
+            if (it->isOffScreen()) {
+                it = enemyBullets.erase(it);
+            }
+            else if (it->getBounds().intersects(player.getBounds())) {
+                window.close();
             }
             else {
                 ++it;
@@ -151,16 +188,19 @@ int main() {
 
         
         window.clear();
+        window.draw(background);
         player.draw(window); 
 
         for (auto& enemy : enemies) {
             enemy.draw(window); 
         }
 
-        for (auto& bullet : bullets) {
+        for (auto& bullet : playerBullets) {
             bullet.draw(window); 
         }
-
+        for (auto& bullet : enemyBullets) {
+            bullet.draw(window);
+        }
         window.display();
     }
 
