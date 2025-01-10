@@ -102,31 +102,23 @@ public:
     }
 };
 std::shared_ptr<sf::Texture>Bullet::texture = nullptr;
-bool czyKolizja(const Enemy& newEnemy, const std::vector<Enemy>& enemies) {
-    for (const auto& enemy : enemies) {
-        if (newEnemy.getBounds().intersects(enemy.getBounds())) {
-            return true;
-        }
-    }
-    return false;
-}
-void spawnEnemies(std::vector<Enemy>& enemies, int level) {
-    int enemyCount = 1 + level;
+void generateEnemies(std::vector<Enemy>& enemies, int count) {
     enemies.clear();
-    std::srand(static_cast<unsigned>(std::time(nullptr)));
-    for (int i = 0;i < enemyCount;i++) {
-        for (int i = 0;i < enemyCount;i++) {
-            bool positionFound = false;
-            while (!positionFound) {
-                float x = static_cast<float>(std::rand() % 700 + 50);
-                float y = static_cast<float>(std::rand() % 150 + 0);
-                Enemy tempEnemy(x, y);
-                if (!czyKolizja(tempEnemy, enemies)) {
-                    enemies.emplace_back(x, y);
-                    positionFound = true;
+    for (int i = 0;i < count;++i) {
+        float x, y;
+        bool validPosition;
+        do {
+            validPosition = true;
+            x = 50 + std::rand() % 700;
+            y = 0 + std::rand() % 150;
+            for (const auto& enemy : enemies) {
+                if (sf::FloatRect(x, y, 64, 64).intersects(enemy.getBounds())) {
+                    validPosition = false;
+                    break;
                 }
             }
-        }
+        } while (!validPosition);
+        enemies.emplace_back(x, y);
     }
 }
 
@@ -149,91 +141,113 @@ int main() {
     std::vector<Enemy> enemies;
     std::vector<Bullet> playerBullets;
     std::vector<Bullet> enemyBullets;
-    int level = 0;
-    spawnEnemies(enemies, level);
+    int level = 1;
+    generateEnemies(enemies, 2);
 
 
    
     sf::Clock clock;
     sf::Clock enemyFireClock;
+    
+    sf::Font font;
+    font.loadFromFile("arial.ttf");
+   
+    sf::Text levelText;
+    levelText.setFont(font);
+    levelText.setCharacterSize(24);
+    levelText.setFillColor(sf::Color::White);
+    levelText.setString("Level: 1");
+    levelText.setPosition(10, 10);
 
+    sf::Text pauseText;
+    pauseText.setFont(font);
+    pauseText.setCharacterSize(30);
+    pauseText.setFillColor(sf::Color::White);
+    pauseText.setString("Pauza\nNacisnij ESC zeby wznowic gre");
+    pauseText.setPosition(200, 250);
+
+    bool isPaused=false;
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
-        }
-
-        
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)&&player.getPosition().x>0) {
-            player.move(-1.0f, 0);
-        }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)&&player.getPosition().x<750) {
-            player.move(1.0f, 0);
-        }
-
-        
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
-            if (clock.getElapsedTime().asSeconds() > 0.5f) {
-                playerBullets.emplace_back(player.getPosition().x + 20, player.getPosition().y, -2.0f);
-                clock.restart();
+            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape) {
+                isPaused = !isPaused;
             }
         }
+        if (!isPaused) {
 
-        
-        if (enemyFireClock.getElapsedTime().asSeconds() > 2.0f) {
-            for (auto& enemy : enemies) {
-                if (std::rand() % 2 == 0) {
-                    enemyBullets.emplace_back(enemy.getPosition().x + 20,enemy.getPosition().y + 50, 1.0f);
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && player.getPosition().x > 0) {
+                player.move(-1.0f, 0);
+            }
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && player.getPosition().x < 750) {
+                player.move(1.0f, 0);
+            }
+
+
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
+                if (clock.getElapsedTime().asSeconds() > 0.5f) {
+                    playerBullets.emplace_back(player.getPosition().x + 20, player.getPosition().y, -2.0f);
+                    clock.restart();
                 }
             }
-            enemyFireClock.restart();
-        }
 
-        for (auto it = playerBullets.begin();it != playerBullets.end();) {
-            it->update();
-            if (it->isOffScreen()) {
-                it = playerBullets.erase(it);
+
+            if (enemyFireClock.getElapsedTime().asSeconds() > 2.0f) {
+                for (auto& enemy : enemies) {
+                    if (std::rand() % 2 == 0) {
+                        enemyBullets.emplace_back(enemy.getPosition().x + 20, enemy.getPosition().y + 50, 1.0f);
+                    }
+                }
+                enemyFireClock.restart();
             }
-            else {
-                bool hit = false;
-                for (auto enemyIt = enemies.begin();enemyIt != enemies.end();) {
-                    if (it->getBounds().intersects(enemyIt->getBounds())) {
-                        enemyIt = enemies.erase(enemyIt);
-                        hit = true;
-                        break;
 
+            for (auto it = playerBullets.begin();it != playerBullets.end();) {
+                it->update();
+                if (it->isOffScreen()) {
+                    it = playerBullets.erase(it);
+                }
+                else {
+                    bool hit = false;
+                    for (auto enemyIt = enemies.begin();enemyIt != enemies.end();) {
+                        if (it->getBounds().intersects(enemyIt->getBounds())) {
+                            enemyIt = enemies.erase(enemyIt);
+                            hit = true;
+                            break;
+
+                        }
+                        else {
+                            ++enemyIt;
+                        }
+                    }
+                    if (hit) {
+                        it = playerBullets.erase(it);
                     }
                     else {
-                        ++enemyIt;
+                        ++it;
                     }
                 }
-                if (hit) {
-                    it = playerBullets.erase(it);
+            }
+            for (auto it = enemyBullets.begin();it != enemyBullets.end();) {
+                it->update();
+                if (it->isOffScreen()) {
+                    it = enemyBullets.erase(it);
+                }
+                else if (it->getBounds().intersects(player.getBounds())) {
+                    window.close();
                 }
                 else {
                     ++it;
                 }
             }
-        }
-        for (auto it = enemyBullets.begin();it != enemyBullets.end();) {
-            it->update();
-            if (it->isOffScreen()) {
-                it = enemyBullets.erase(it);
-            }
-            else if (it->getBounds().intersects(player.getBounds())) {
-                window.close();
-            }
-            else {
-                ++it;
-            }
-        }
-        if (enemies.empty()) {
-            level++;
-            spawnEnemies(enemies, level);
+            if (enemies.empty()) {
+                ++level;
+                levelText.setString("Level: " + std::to_string(level));
+                generateEnemies(enemies,1+level);
 
+            }
         }
-        
         window.clear();
         window.draw(background);
         player.draw(window); 
@@ -247,6 +261,10 @@ int main() {
         }
         for (auto& bullet : enemyBullets) {
             bullet.draw(window);
+        }
+        window.draw(levelText);
+        if (isPaused) {
+            window.draw(pauseText);
         }
         window.display();
     }
