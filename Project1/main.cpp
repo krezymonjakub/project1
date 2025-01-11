@@ -180,7 +180,7 @@ int main() {
     int level = loadSavedLevel(currentLevelFile);
 
     
-    generateEnemies(enemies, 2);
+    generateEnemies(enemies, 1+level);
 
 
    
@@ -194,7 +194,7 @@ int main() {
     levelText.setFont(font);
     levelText.setCharacterSize(24);
     levelText.setFillColor(sf::Color::White);
-    levelText.setString("Level: 1");
+    levelText.setString("Level: "+std::to_string(level));
     levelText.setPosition(10, 10);
 
     
@@ -282,6 +282,7 @@ int main() {
                         }
                         if (event.key.code == sf::Keyboard::Enter) {
                             if (menuIndex == 0) {
+                                saveCurrentLevel(currentLevelFile, 1);
                                 window.close();
                             }
                             else {
@@ -354,6 +355,7 @@ int main() {
                     it = enemyBullets.erase(it);
                 }
                 else if (it->getBounds().intersects(player.getBounds())) {
+                    saveCurrentLevel(currentLevelFile, 1);
                     window.close();
                 }
                 else {
