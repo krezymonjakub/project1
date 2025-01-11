@@ -138,7 +138,22 @@ void saveMaxLevel(const std::string& filename, int maxLevel) {
 
     }
 }
+int loadSavedLevel(const std::string& filename) {
+    std::ifstream file(filename);
+    if (file.is_open()) {
+        int savedLevel;
+        file >> savedLevel;
+        return savedLevel;
 
+    }
+    return 1;
+}
+void saveCurrentLevel(const std::string& filename, int level) {
+    std::ofstream file(filename);
+    if (file.is_open()) {
+        file << level;
+    }
+}
 int main() {
     sf::RenderWindow window(sf::VideoMode(800, 600), "Space Invaders");
     sf::Texture backgroundTexture;
@@ -161,9 +176,10 @@ int main() {
     
     const std::string saveFile="max_level.txt";
     int maxLevel = loadMaxLevel(saveFile);
+    const std::string currentLevelFile = "current_level.txt";
+    int level = loadSavedLevel(currentLevelFile);
 
-
-    int level = 1;
+    
     generateEnemies(enemies, 2);
 
 
@@ -181,12 +197,7 @@ int main() {
     levelText.setString("Level: 1");
     levelText.setPosition(10, 10);
 
-    sf::Text pauseText;
-    pauseText.setFont(font);
-    pauseText.setCharacterSize(30);
-    pauseText.setFillColor(sf::Color::White);
-    pauseText.setString("Pauza\nNacisnij ESC zeby wznowic gre");
-    pauseText.setPosition(200, 250);
+    
 
     sf::Text maxLevelText;
     maxLevelText.setFont(font);
@@ -195,7 +206,22 @@ int main() {
     maxLevelText.setString("Max Level: " + std::to_string(maxLevel));
     maxLevelText.setPosition(10, 30);
 
+
     bool isPaused=false;
+    bool showMenu = false;
+    int menuIndex = 0;
+
+    std::vector<std::string>menuOptions = { "Wznow gre","Sterowanie","Wyjdz bez zapisywania","Wyjdz i zapisz" };
+    sf::Text menuText[4];
+    for (int i = 0;i < 4;i++) {
+        menuText[i].setFont(font);
+        menuText[i].setCharacterSize(30);
+        menuText[i].setFillColor(i == menuIndex ? sf::Color::Yellow : sf::Color::White);
+        menuText[i].setString(menuOptions[i]);
+        menuText[i].setPosition(300, 200 + i * 50);
+
+    }
+
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -203,6 +229,32 @@ int main() {
                 window.close();
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape) {
                 isPaused = !isPaused;
+                showMenu = isPaused;
+            }
+            if (showMenu) {
+                if (event.key.code == sf::Keyboard::Up) {
+                    menuIndex = (menuIndex - 1 + 4) % 4;
+                }
+                if (event.key.code == sf::Keyboard::Down) {
+                    menuIndex = (menuIndex + 1) % 4;
+                }
+                if (event.key.code == sf::Keyboard::Enter) {
+                    switch (menuIndex) {
+                    case 0:
+                        isPaused = false;
+                        showMenu = false;
+                        break;
+                    case 1:
+                        break;
+                    case 2:
+                        window.close();
+                        break;
+                    case 3:
+                        saveCurrentLevel(currentLevelFile, level);
+                        window.close();
+                        break;
+                    }
+                }
             }
         }
         if (!isPaused) {
@@ -298,8 +350,14 @@ int main() {
         }
         window.draw(levelText);
         window.draw(maxLevelText);
-        if (isPaused) {
-            window.draw(pauseText);
+        if (showMenu) {
+            sf::RectangleShape overlay(sf::Vector2f(800, 600));
+            overlay.setFillColor(sf::Color(0, 0, 0, 200));
+            window.draw(overlay);
+            for (int i = 0;i < 4;++i) {
+                menuText[i].setFillColor(i == menuIndex ? sf::Color::Yellow : sf::Color::White);
+                window.draw(menuText[i]);
+            }
         }
         window.display();
     }
