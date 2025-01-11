@@ -210,7 +210,7 @@ int main() {
     bool isPaused=false;
     bool showMenu = false;
     int menuIndex = 0;
-
+    int menuState = 0;
     std::vector<std::string>menuOptions = { "Wznow gre","Sterowanie","Wyjdz bez zapisywania","Wyjdz i zapisz" };
     sf::Text menuText[4];
     for (int i = 0;i < 4;i++) {
@@ -224,35 +224,73 @@ int main() {
 
     while (window.isOpen()) {
         sf::Event event;
+        bool keyProceseed = false;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape) {
-                isPaused = !isPaused;
-                showMenu = isPaused;
+                if (menuState == 0) {
+                    isPaused = !isPaused;
+                    showMenu = isPaused;
+                }
+                else {
+                    menuState = 0;
+                }
             }
             if (showMenu) {
-                if (event.key.code == sf::Keyboard::Up) {
-                    menuIndex = (menuIndex - 1 + 4) % 4;
+                if (menuState == 0) {
+                    if (event.type == sf::Event::KeyPressed && !keyProceseed) {
+                        if (event.key.code == sf::Keyboard::Up) {
+                            menuIndex = (menuIndex - 1 + 4) % 4;
+                        }
+                        if (event.key.code == sf::Keyboard::Down) {
+                            menuIndex = (menuIndex + 1) % 4;
+                        }
+                    }
+                    if (event.type == sf::Event::KeyReleased) {
+                        keyProceseed = false;
+                    }
+                    if (event.key.code == sf::Keyboard::Enter) {
+                        switch (menuIndex) {
+                        case 0:
+                            isPaused = false;
+                            showMenu = false;
+                            break;
+                        case 1:
+                            menuState = 1;
+                            break;
+                        case 2:
+                            menuState = 2;
+                            break;
+                        case 3:
+                            saveCurrentLevel(currentLevelFile, level);
+                            window.close();
+                            break;
+                        }
+                    }
                 }
-                if (event.key.code == sf::Keyboard::Down) {
-                    menuIndex = (menuIndex + 1) % 4;
+                else if (menuState == 1) {
+                    if (event.type == sf::Event::KeyPressed && event.key.code==sf::Keyboard::Escape) {
+                        menuState = 0;
+                    }
                 }
-                if (event.key.code == sf::Keyboard::Enter) {
-                    switch (menuIndex) {
-                    case 0:
-                        isPaused = false;
-                        showMenu = false;
-                        break;
-                    case 1:
-                        break;
-                    case 2:
-                        window.close();
-                        break;
-                    case 3:
-                        saveCurrentLevel(currentLevelFile, level);
-                        window.close();
-                        break;
+                else if (menuState==2) {
+                    if (event.type == sf::Event::KeyPressed && !keyProceseed) {
+                        if (event.key.code == sf::Keyboard::Up || event.key.code == sf::Keyboard::Down) {
+                            menuIndex = (menuIndex + 1) % 2;
+                            keyProceseed = true;
+                        }
+                        if (event.key.code == sf::Keyboard::Enter) {
+                            if (menuIndex == 0) {
+                                window.close();
+                            }
+                            else {
+                                menuState = 0;
+                            }
+                        }
+                    }
+                    if (event.type == sf::Event::KeyReleased) {
+                        keyProceseed = false;
                     }
                 }
             }
@@ -354,10 +392,41 @@ int main() {
             sf::RectangleShape overlay(sf::Vector2f(800, 600));
             overlay.setFillColor(sf::Color(0, 0, 0, 200));
             window.draw(overlay);
-            for (int i = 0;i < 4;++i) {
-                menuText[i].setFillColor(i == menuIndex ? sf::Color::Yellow : sf::Color::White);
-                window.draw(menuText[i]);
+            if (menuState == 0) {
+                for (int i = 0;i < 4;++i) {
+                    menuText[i].setFillColor(i == menuIndex ? sf::Color::Yellow : sf::Color::White);
+                    window.draw(menuText[i]);
+                }
             }
+            else if (menuState == 1) {
+                sf::Text controlsText;
+                controlsText.setFont(font);
+                controlsText.setCharacterSize(24);
+                controlsText.setFillColor(sf::Color::White);
+                controlsText.setString("Sterowanie\n\nRuch w lewo:Strzalka w lewo\nRuch w prawo:Strzalka w prawo\nStrzal:Spacja\nPauza:ESC");
+                controlsText.setPosition(100, 100);
+                window.draw(controlsText);
+            }
+            else if (menuState == 2) {
+                sf::Text confirmText;
+                confirmText.setFont(font);
+                confirmText.setCharacterSize(24);
+                confirmText.setFillColor(sf::Color::White);
+                confirmText.setString("Czy na pewno chcesz wyjsc? Stracisz caly postep.");
+                confirmText.setPosition(150, 200);
+                window.draw(confirmText);
+                sf::Text textOption[2];
+                std::vector<std::string>options = { "Tak","Nie" };
+                for (int i = 0;i < 2;i++) {
+                    textOption[i].setFont(font);
+                    textOption[i].setCharacterSize(24);
+                    textOption[i].setFillColor(i == menuIndex ? sf::Color::Yellow : sf::Color::White);
+                    textOption[i].setString(options[i]);
+                    textOption[i].setPosition(375, 250 + i * 50);
+                    window.draw(textOption[i]);
+                }
+            }
+
         }
         window.display();
     }
