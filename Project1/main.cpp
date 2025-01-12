@@ -154,6 +154,14 @@ void saveCurrentLevel(const std::string& filename, int level) {
         file << level;
     }
 }
+std::string Difficulty(int level) {
+    if (level >= 1 && level <= 5) return "easy";
+    if (level >= 6 && level <= 10) return "medium";
+    if (level >= 11 && level <= 15) return "hard";
+    if (level >= 16 && level <= 25) return "extreme";
+    return "impossible";
+
+}
 int main() {
     sf::RenderWindow window(sf::VideoMode(800, 600), "Space Invaders");
     sf::Texture backgroundTexture;
@@ -206,11 +214,35 @@ int main() {
     maxLevelText.setString("Max Level: " + std::to_string(maxLevel));
     maxLevelText.setPosition(10, 30);
 
-
+    sf::Text DifficultyText;
+    DifficultyText.setFont(font);
+    DifficultyText.setCharacterSize(24);
+    DifficultyText.setFillColor(sf::Color::White);
+    DifficultyText.setString("Difficulty: " + Difficulty(level));
+    DifficultyText.setPosition(10, 50);
     bool isPaused=false;
     bool showMenu = false;
     int menuIndex = 0;
     int menuState = 0;
+    bool gameOver = false;
+    int gameOverIndex = 0;
+
+    sf::Text gameOverText;
+    gameOverText.setFont(font);
+    gameOverText.setCharacterSize(24);
+    gameOverText.setFillColor(sf::Color::White);
+    gameOverText.setString("Przegrales");
+    gameOverText.setPosition(300, 200);
+
+    std::vector<std::string>gameOverOptions = { "Wznow gre","Wyjdz z gry" };
+    sf::Text gameOverMenuText[2];
+    for (int i = 0; i < 2; i++) {
+        gameOverMenuText[i].setFont(font);
+        gameOverMenuText[i].setCharacterSize(24);
+        gameOverMenuText[i].setFillColor(i == gameOverIndex ? sf::Color::Yellow : sf::Color::White);
+        gameOverMenuText[i].setString(gameOverOptions[i]);
+        gameOverMenuText[i].setPosition(300, 300 + i * 50);
+    }
     std::vector<std::string>menuOptions = { "Wznow gre","Sterowanie","Wyjdz bez zapisywania","Wyjdz i zapisz" };
     sf::Text menuText[4];
     for (int i = 0;i < 4;i++) {
@@ -295,6 +327,7 @@ int main() {
                     }
                 }
             }
+
         }
         if (!isPaused) {
 
@@ -355,8 +388,8 @@ int main() {
                     it = enemyBullets.erase(it);
                 }
                 else if (it->getBounds().intersects(player.getBounds())) {
-                    saveCurrentLevel(currentLevelFile, 1);
-                    window.close();
+                    gameOver = true;
+                    isPaused = true;
                 }
                 else {
                     ++it;
@@ -365,6 +398,7 @@ int main() {
             if (enemies.empty()) {
                 ++level;
                 levelText.setString("Level: " + std::to_string(level));
+                DifficultyText.setString("Difficulty: " + Difficulty(level));
                 generateEnemies(enemies,1+level);
 
                 if (level > maxLevel) {
@@ -373,6 +407,45 @@ int main() {
                     saveMaxLevel(saveFile, maxLevel);
                 }
             }
+        }
+        if (gameOver) {
+            sf::RectangleShape overlay(sf::Vector2f(800, 600));
+            overlay.setFillColor(sf::Color(0, 0, 0, 200));
+            window.draw(overlay);
+
+            window.draw(gameOverText);
+            for (int i = 0;i < 2;++i) {
+                gameOverMenuText[i].setFillColor(i == gameOverIndex ? sf::Color::Yellow : sf::Color::White);
+                window.draw(gameOverMenuText[i]);   
+            }
+
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)|| (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))) {
+                if (!keyProceseed) {
+                    gameOverIndex = (gameOverIndex + 1) % 2;
+                    keyProceseed = true;
+                }
+                else {
+                    keyProceseed = false;
+                }
+            }
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)) {
+                if (gameOverIndex == 0) {
+                    gameOver = false;
+                    level = 1;
+                    playerBullets.clear();
+                    enemyBullets.clear();
+                    generateEnemies(enemies, 1 + level);
+                    levelText.setString("Level: 1");
+                    isPaused = false;
+                    DifficultyText.setString("Difficulty: " + Difficulty(level));
+
+                }
+                else if (gameOverIndex == 1) {
+                    window.close(); 
+                }
+            }
+            window.display();
+            continue;
         }
         window.clear();
         window.draw(background);
@@ -390,6 +463,7 @@ int main() {
         }
         window.draw(levelText);
         window.draw(maxLevelText);
+        window.draw(DifficultyText);
         if (showMenu) {
             sf::RectangleShape overlay(sf::Vector2f(800, 600));
             overlay.setFillColor(sf::Color(0, 0, 0, 200));
@@ -430,6 +504,7 @@ int main() {
             }
 
         }
+
         window.display();
     }
 
