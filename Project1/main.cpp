@@ -53,7 +53,7 @@ public:
         }
         sprite.setTexture(*texture);
         sprite.setPosition(x, y);
-        sprite.setScale(0.5, 0.5);
+        sprite.setScale(0.4, 0.4);
     }
 
     void draw(sf::RenderWindow& window) {
@@ -110,7 +110,7 @@ void generateEnemies(std::vector<Enemy>& enemies, int count) {
         do {
             validPosition = true;
             x = 50 + std::rand() % 700;
-            y = 0 + std::rand() % 150;
+            y = 0 + std::rand() % 250;
             for (const auto& enemy : enemies) {
                 if (sf::FloatRect(x, y, 64, 64).intersects(enemy.getBounds())) {
                     validPosition = false;
@@ -226,6 +226,7 @@ int main() {
     int menuState = 0;
     bool gameOver = false;
     int gameOverIndex = 0;
+    bool showHelp = false;
 
     sf::Text gameOverText;
     gameOverText.setFont(font);
@@ -268,6 +269,11 @@ int main() {
                 else {
                     menuState = 0;
                 }
+                
+            }
+            if (event.type==sf::Event::KeyPressed && event.key.code == sf::Keyboard::F1) {
+                showHelp = !showHelp;
+                isPaused = showHelp;
             }
             if (showMenu) {
                 if (menuState == 0) {
@@ -408,6 +414,18 @@ int main() {
                 }
             }
         }
+        if (showHelp) {
+            window.clear();
+            sf::Text controlsText;
+            controlsText.setFont(font);
+            controlsText.setCharacterSize(24);
+            controlsText.setFillColor(sf::Color::White);
+            controlsText.setString("Sterowanie\n\nRuch w lewo:Strzalka w lewo\nRuch w prawo:Strzalka w prawo\nStrzal:Spacja\nPauza:ESC");
+            controlsText.setPosition(100, 100);
+            window.draw(controlsText);
+            window.display();
+            continue;
+        }
         if (gameOver) {
             sf::RectangleShape overlay(sf::Vector2f(800, 600));
             overlay.setFillColor(sf::Color(0, 0, 0, 200));
@@ -441,6 +459,7 @@ int main() {
 
                 }
                 else if (gameOverIndex == 1) {
+                    saveCurrentLevel(currentLevelFile, 1);
                     window.close(); 
                 }
             }
