@@ -25,14 +25,14 @@ void loadPlayerData(PlayerData* player) {
     }
     else {
         player->name = "gracz";
-        player->highScore=0;
+        player->highScore = 0;
     }
 }
 
 
 class Player {
-    static std::shared_ptr<sf::Texture>texture;   
-    sf::Sprite sprite;     
+    static std::shared_ptr<sf::Texture>texture;
+    sf::Sprite sprite;
 
 public:
     Player() {
@@ -41,7 +41,7 @@ public:
             texture->loadFromFile("sprite.png");
         }
         sprite.setTexture(*texture);
-        sprite.setPosition(375, 450); 
+        sprite.setPosition(375, 450);
         sprite.setScale(0.17, 0.17);
     }
 
@@ -97,7 +97,7 @@ class Bullet {
     float speed;
 
 public:
-    Bullet(float x, float y,float speedY) : speed(speedY) {
+    Bullet(float x, float y, float speedY) : speed(speedY) {
         if (!texture) {
             texture = std::make_shared<sf::Texture>();
             texture->loadFromFile("bullet.png");
@@ -194,41 +194,41 @@ int main() {
         static_cast<float>(windowSize.x) / textureSize.x,
         static_cast<float>(windowSize.y) / textureSize.y
     );
-   
-    
-    
-    
 
-    
+
+
+
+
+
     Player player;
-    
-   
+
+
     std::vector<Enemy> enemies;
     std::vector<Bullet> playerBullets;
     std::vector<Bullet> enemyBullets;
-    
-    const std::string saveFile="max_level.txt";
+
+    const std::string saveFile = "max_level.txt";
     int maxLevel = loadMaxLevel(saveFile);
     const std::string currentLevelFile = "current_level.txt";
     int level = loadSavedLevel(currentLevelFile);
 
-    
-    generateEnemies(enemies, 1+level);
+
+    generateEnemies(enemies, 1 + level);
 
     PlayerData playerData;
     loadPlayerData(&playerData);
-   
+
     sf::Clock clock;
     sf::Clock enemyFireClock;
-    
+
     sf::Font font;
     font.loadFromFile("arial.ttf");
-   
+
     sf::Text levelText;
     levelText.setFont(font);
     levelText.setCharacterSize(24);
     levelText.setFillColor(sf::Color::White);
-    levelText.setString("Level: "+std::to_string(level));
+    levelText.setString("Level: " + std::to_string(level));
     levelText.setPosition(10, 10);
 
 
@@ -238,7 +238,7 @@ int main() {
     DifficultyText.setFillColor(sf::Color::White);
     DifficultyText.setString("Difficulty: " + Difficulty(level));
     DifficultyText.setPosition(10, 30);
-    
+
     sf::Text playerNameText;
     playerNameText.setFont(font);
     playerNameText.setCharacterSize(24);
@@ -252,9 +252,9 @@ int main() {
     highScoreText.setFillColor(sf::Color::White);
     highScoreText.setString("Rekord: " + std::to_string(playerData.highScore));
     highScoreText.setPosition(10, 70);
-    
-    bool keyPressed=false;
-    bool isPaused=false;
+
+    bool keyPressed = false;
+    bool isPaused = false;
     bool showMenu = false;
     int menuIndex = 0;
     int menuState = 0;
@@ -263,7 +263,7 @@ int main() {
     bool showHelp = false;
     bool isStartScreen = true;
     std::string playerName = "";
-    
+
     sf::Text promptText;
     promptText.setFont(font);
     promptText.setCharacterSize(24);
@@ -318,9 +318,9 @@ int main() {
                 else {
                     menuState = 0;
                 }
-                
+
             }
-            if (event.type==sf::Event::KeyPressed && event.key.code == sf::Keyboard::F1) {
+            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::F1) {
                 showHelp = !showHelp;
                 isPaused = showHelp;
             }
@@ -358,11 +358,11 @@ int main() {
                     }
                 }
                 else if (menuState == 1) {
-                    if (event.type == sf::Event::KeyPressed && event.key.code==sf::Keyboard::Escape) {
+                    if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape) {
                         menuState = 0;
                     }
                 }
-                else if (menuState==2) {
+                else if (menuState == 2) {
                     if (event.type == sf::Event::KeyPressed && !keyProceseed) {
                         if (event.key.code == sf::Keyboard::Up || event.key.code == sf::Keyboard::Down) {
                             menuIndex = (menuIndex + 1) % 2;
@@ -455,13 +455,14 @@ int main() {
                 ++level;
                 levelText.setString("Level: " + std::to_string(level));
                 DifficultyText.setString("Difficulty: " + Difficulty(level));
-                generateEnemies(enemies,1+level);
+                generateEnemies(enemies, 1 + level);
 
                 if (level > playerData.highScore) {
                     playerData.highScore = level;
                     savePlayerData(&playerData);
                     highScoreText.setString("Rekord: " + std::to_string(playerData.highScore));
                     playerNameText.setString("Gracz: " + playerData.name);
+
                 }
             }
         }
@@ -473,7 +474,7 @@ int main() {
                 }
                 else if (event.text.unicode == '\r') {
                     if (!playerName.empty()) {
-                        isStartScreen = false;  
+                        isStartScreen = false;
                     }
                 }
                 else if (event.text.unicode < 128) {
@@ -486,13 +487,13 @@ int main() {
             if (event.type == sf::Event::KeyReleased) {
                 keyPressed = false;
             }
-            inputText.setString(playerName);  
+            inputText.setString(playerName);
 
             window.clear();
-            window.draw(promptText);  
-            window.draw(inputText);   
+            window.draw(promptText);
+            window.draw(inputText);
             window.display();
-            continue;  
+            continue;
         }
 
         if (showHelp) {
@@ -515,10 +516,10 @@ int main() {
             window.draw(gameOverText);
             for (int i = 0;i < 2;++i) {
                 gameOverMenuText[i].setFillColor(i == gameOverIndex ? sf::Color::Yellow : sf::Color::White);
-                window.draw(gameOverMenuText[i]);   
+                window.draw(gameOverMenuText[i]);
             }
 
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)|| (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))) {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) || (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))) {
                 if (!keyProceseed) {
                     gameOverIndex = (gameOverIndex + 1) % 2;
                     keyProceseed = true;
@@ -541,25 +542,25 @@ int main() {
                 }
                 else if (gameOverIndex == 1) {
                     saveCurrentLevel(currentLevelFile, 1);
-                    window.close(); 
+                    window.close();
                 }
             }
             window.display();
             continue;
         }
-        
+
         playerData.name = playerName;
 
         window.clear();
         window.draw(background);
-        player.draw(window); 
+        player.draw(window);
 
         for (auto& enemy : enemies) {
-            enemy.draw(window); 
+            enemy.draw(window);
         }
 
         for (auto& bullet : playerBullets) {
-            bullet.draw(window); 
+            bullet.draw(window);
         }
         for (auto& bullet : enemyBullets) {
             bullet.draw(window);
