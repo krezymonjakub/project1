@@ -7,6 +7,27 @@
 #include <memory>
 #include <fstream>
 
+struct PlayerData {
+    std::string name;
+    int highScore;
+};
+void savePlayerData(const PlayerData* player) {
+    std::ofstream file("player_data.txt");
+    if (file.is_open()) {
+        file << player->name << "\n" << player->highScore;
+    }
+}
+void loadPlayerData(PlayerData* player) {
+    std::ifstream file("player_data.txt");
+    if (file.is_open()) {
+        std::getline(file, player->name);
+        file >> player->highScore;
+    }
+    else {
+        player->name = "gracz";
+        player->highScore=0;
+    }
+}
 
 
 class Player {
@@ -110,7 +131,7 @@ void generateEnemies(std::vector<Enemy>& enemies, int count) {
         do {
             validPosition = true;
             x = 50 + std::rand() % 700;
-            y = 0 + std::rand() % 250;
+            y = 0 + std::rand() % 200;
             for (const auto& enemy : enemies) {
                 if (sf::FloatRect(x, y, 64, 64).intersects(enemy.getBounds())) {
                     validPosition = false;
@@ -173,10 +194,14 @@ int main() {
         static_cast<float>(windowSize.x) / textureSize.x,
         static_cast<float>(windowSize.y) / textureSize.y
     );
+   
+    
+    
+    
 
     
     Player player;
-
+    
    
     std::vector<Enemy> enemies;
     std::vector<Bullet> playerBullets;
@@ -190,7 +215,8 @@ int main() {
     
     generateEnemies(enemies, 1+level);
 
-
+    PlayerData playerData;
+    loadPlayerData(&playerData);
    
     sf::Clock clock;
     sf::Clock enemyFireClock;
@@ -205,21 +231,29 @@ int main() {
     levelText.setString("Level: "+std::to_string(level));
     levelText.setPosition(10, 10);
 
-    
-
-    sf::Text maxLevelText;
-    maxLevelText.setFont(font);
-    maxLevelText.setCharacterSize(24);
-    maxLevelText.setFillColor(sf::Color::White);
-    maxLevelText.setString("Max Level: " + std::to_string(maxLevel));
-    maxLevelText.setPosition(10, 30);
 
     sf::Text DifficultyText;
     DifficultyText.setFont(font);
     DifficultyText.setCharacterSize(24);
     DifficultyText.setFillColor(sf::Color::White);
     DifficultyText.setString("Difficulty: " + Difficulty(level));
-    DifficultyText.setPosition(10, 50);
+    DifficultyText.setPosition(10, 30);
+    
+    sf::Text playerNameText;
+    playerNameText.setFont(font);
+    playerNameText.setCharacterSize(24);
+    playerNameText.setFillColor(sf::Color::White);
+    playerNameText.setString("Gracz: " + playerData.name);
+    playerNameText.setPosition(10, 50);
+
+    sf::Text highScoreText;
+    highScoreText.setFont(font);
+    highScoreText.setCharacterSize(24);
+    highScoreText.setFillColor(sf::Color::White);
+    highScoreText.setString("Rekord: " + std::to_string(playerData.highScore));
+    highScoreText.setPosition(10, 70);
+    
+    bool keyPressed=false;
     bool isPaused=false;
     bool showMenu = false;
     int menuIndex = 0;
@@ -227,6 +261,21 @@ int main() {
     bool gameOver = false;
     int gameOverIndex = 0;
     bool showHelp = false;
+    bool isStartScreen = true;
+    std::string playerName = "";
+    
+    sf::Text promptText;
+    promptText.setFont(font);
+    promptText.setCharacterSize(24);
+    promptText.setFillColor(sf::Color::White);
+    promptText.setString("Podaj swoje imie i nacisnij Enter, aby rozpoczac:");
+    promptText.setPosition(100, 200);
+
+    sf::Text inputText;
+    inputText.setFont(font);
+    inputText.setCharacterSize(24);
+    inputText.setFillColor(sf::Color::Yellow);
+    inputText.setPosition(100, 250);
 
     sf::Text gameOverText;
     gameOverText.setFont(font);
@@ -275,6 +324,7 @@ int main() {
                 showHelp = !showHelp;
                 isPaused = showHelp;
             }
+
             if (showMenu) {
                 if (menuState == 0) {
                     if (event.type == sf::Event::KeyPressed && !keyProceseed) {
@@ -407,13 +457,44 @@ int main() {
                 DifficultyText.setString("Difficulty: " + Difficulty(level));
                 generateEnemies(enemies,1+level);
 
-                if (level > maxLevel) {
-                    maxLevel = level;
-                    maxLevelText.setString("Max Level: " + std::to_string(maxLevel));
-                    saveMaxLevel(saveFile, maxLevel);
+                if (level > playerData.highScore) {
+                    playerData.highScore = level;
+                    savePlayerData(&playerData);
+                    highScoreText.setString("Rekord: " + std::to_string(playerData.highScore));
+                    playerNameText.setString("Gracz: " + playerData.name);
                 }
             }
         }
+        if (isStartScreen) {
+            if (event.type == sf::Event::TextEntered) {
+                if (event.text.unicode == '\b') {
+                    if (!playerName.empty())
+                        playerName.pop_back();
+                }
+                else if (event.text.unicode == '\r') {
+                    if (!playerName.empty()) {
+                        isStartScreen = false;  
+                    }
+                }
+                else if (event.text.unicode < 128) {
+                    if (playerName.size() < 15 && !keyPressed) {
+                        playerName += static_cast<char>(event.text.unicode);
+                        keyPressed = true;
+                    }
+                }
+            }
+            if (event.type == sf::Event::KeyReleased) {
+                keyPressed = false;
+            }
+            inputText.setString(playerName);  
+
+            window.clear();
+            window.draw(promptText);  
+            window.draw(inputText);   
+            window.display();
+            continue;  
+        }
+
         if (showHelp) {
             window.clear();
             sf::Text controlsText;
@@ -466,6 +547,9 @@ int main() {
             window.display();
             continue;
         }
+        
+        playerData.name = playerName;
+
         window.clear();
         window.draw(background);
         player.draw(window); 
@@ -481,8 +565,9 @@ int main() {
             bullet.draw(window);
         }
         window.draw(levelText);
-        window.draw(maxLevelText);
         window.draw(DifficultyText);
+        window.draw(playerNameText);
+        window.draw(highScoreText);
         if (showMenu) {
             sf::RectangleShape overlay(sf::Vector2f(800, 600));
             overlay.setFillColor(sf::Color(0, 0, 0, 200));
