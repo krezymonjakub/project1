@@ -130,7 +130,7 @@ void generateEnemies(std::vector<Enemy>& enemies, int count) {
         bool validPosition;
         do {
             validPosition = true;
-            x = 50 + std::rand() % 700;
+            x = 50 + std::rand() % 650;
             y = 0 + std::rand() % 200;
             for (const auto& enemy : enemies) {
                 if (sf::FloatRect(x, y, 64, 64).intersects(enemy.getBounds())) {
@@ -390,7 +390,7 @@ int main() {
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && player.getPosition().x > 0) {
                 player.move(-1.0f, 0);
             }
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && player.getPosition().x < 750) {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && player.getPosition().x < 700) {
                 player.move(1.0f, 0);
             }
 
@@ -403,9 +403,9 @@ int main() {
             }
 
 
-            if (enemyFireClock.getElapsedTime().asSeconds() > 2.0f) {
+            if (enemyFireClock.getElapsedTime().asSeconds() > 0.5f) {
                 for (auto& enemy : enemies) {
-                    if (std::rand() % 2 == 0) {
+                    if (std::rand() % 5 == 0) {
                         enemyBullets.emplace_back(enemy.getPosition().x + 20, enemy.getPosition().y + 50, 1.0f);
                     }
                 }
