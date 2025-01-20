@@ -260,7 +260,6 @@ int main() {
     int menuState = 0;
     bool gameOver = false;
     int gameOverIndex = 0;
-    bool showHelp = false;
     bool isStartScreen = true;
     std::string playerName = "";
 
@@ -321,8 +320,9 @@ int main() {
 
             }
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::F1) {
-                showHelp = !showHelp;
-                isPaused = showHelp;
+                showMenu = true;   
+                menuState = 1;     
+                isPaused = true;   
             }
 
             if (showMenu) {
@@ -385,7 +385,7 @@ int main() {
             }
 
         }
-        if (!isPaused) {
+        if (!isPaused && !isStartScreen) {
 
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && player.getPosition().x > 0) {
                 player.move(-1.0f, 0);
@@ -468,9 +468,11 @@ int main() {
         }
         if (isStartScreen) {
             if (event.type == sf::Event::TextEntered) {
-                if (event.text.unicode == '\b') {
-                    if (!playerName.empty())
+                if (event.text.unicode == '\b'&& !keyPressed) {
+                    if (!playerName.empty()) {
                         playerName.pop_back();
+                        keyPressed = true;
+                    }
                 }
                 else if (event.text.unicode == '\r') {
                     if (!playerName.empty()) {
@@ -496,18 +498,7 @@ int main() {
             continue;
         }
 
-        if (showHelp) {
-            window.clear();
-            sf::Text controlsText;
-            controlsText.setFont(font);
-            controlsText.setCharacterSize(24);
-            controlsText.setFillColor(sf::Color::White);
-            controlsText.setString("Sterowanie\n\nRuch w lewo:Strzalka w lewo\nRuch w prawo:Strzalka w prawo\nStrzal:Spacja\nPauza:ESC");
-            controlsText.setPosition(100, 100);
-            window.draw(controlsText);
-            window.display();
-            continue;
-        }
+        
         if (gameOver) {
             sf::RectangleShape overlay(sf::Vector2f(800, 600));
             overlay.setFillColor(sf::Color(0, 0, 0, 200));
@@ -520,12 +511,12 @@ int main() {
             }
 
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) || (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))) {
-                if (!keyProceseed) {
+                if (!keyPressed) {
                     gameOverIndex = (gameOverIndex + 1) % 2;
-                    keyProceseed = true;
+                    keyPressed = true;
                 }
                 else {
-                    keyProceseed = false;
+                    keyPressed = false;
                 }
             }
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)) {
